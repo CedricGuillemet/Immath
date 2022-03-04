@@ -84,49 +84,46 @@ void vec4::TransformPoint(const matrix& matrix )
 //You would have to upload to your shader
 // or use glLoadMatrixf if you aren't using shaders.
 void matrix::glhPerspectivef2(float fovyInDegrees, float aspectRatio,
-									  float znear, float zfar)
+									  float znear, float zfar, bool homogeneousNdc, bool rightHand)
 {
-    float ymax, xmax;
-    ymax = znear * tanf(fovyInDegrees * PI / 360.0f);
-    xmax = ymax * aspectRatio;
-    glhFrustumf2(-xmax, xmax, -ymax, ymax, znear, zfar);
+	const float height = 1.0f / tanf(fovyInDegrees * DEG2RAD * 0.5f);
+	const float width = height * 1.0f / aspectRatio;
+	glhFrustumf2(0.0f, 0.0f, width, height, znear, zfar, homogeneousNdc, rightHand);
 }
 
 void matrix::glhPerspectivef2Rad(float fovyRad, float aspectRatio,
-	float znear, float zfar)
+	float znear, float zfar, bool homogeneousNdc, bool rightHand)
 {
-	float ymax, xmax;
-	ymax = znear * tanf(fovyRad);
-	xmax = ymax * aspectRatio;
-	glhFrustumf2(-xmax, xmax, -ymax, ymax, znear, zfar);
+	const float height = 1.0f / tanf(fovyRad * 0.5f);
+	const float width = height * 1.0f / aspectRatio;
+	glhFrustumf2(0.0f, 0.0f, width, height, znear, zfar, homogeneousNdc, rightHand);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void matrix::glhFrustumf2(float left, float right, float bottom, float top,
-								  float znear, float zfar)
+void matrix::glhFrustumf2(float x, float y, float width, float height,
+								  float znear, float zfar, bool homogeneousNdc, bool rightHand)
 {
-    float temp, temp2, temp3, temp4;
-    temp = 2.0f * znear;
-    temp2 = right - left;
-    temp3 = top - bottom;
-    temp4 = zfar - znear;
-    m16[0] = temp / temp2;
-    m16[1] = 0.0;
-    m16[2] = 0.0;
-    m16[3] = 0.0;
-    m16[4] = 0.0;
-    m16[5] = temp / temp3;
-    m16[6] = 0.0;
-    m16[7] = 0.0;
-    m16[8] = (right + left) / temp2;
-    m16[9] = (top + bottom) / temp3;
-    m16[10] = (-zfar - znear) / temp4;
-    m16[11] = -1.0f;
-    m16[12] = 0.0;
-    m16[13] = 0.0;
-    m16[14] = (-temp * zfar) / temp4;
-    m16[15] = 0.0;
+	const float diff = zfar - znear;
+	const float aa = homogeneousNdc ? (zfar + znear) / diff : zfar / diff;
+	const float bb = homogeneousNdc ? (2.0f * zfar * znear) / diff : znear * aa;
+
+	m16[0] = width;
+	m16[1] = 0.f;
+	m16[2] = 0.f;
+	m16[3] = 0.f;
+	m16[4] = 0.f;
+	m16[5] = height;
+	m16[6] = 0.f;
+	m16[7] = 0.f;
+	m16[8] = rightHand ? x : -x;
+	m16[9] = rightHand ? y : -y;
+	m16[10] = rightHand ? -aa : aa;
+	m16[11] = rightHand ? -1.0f : 1.0f;
+	m16[12] = 0.f;
+	m16[13] = 0.f;
+	m16[14] = -bb;
+	m16[15] = 0.f;
 }
 
 void matrix::lookAtRH(const vec4 &eye, const vec4 &at, const vec4 &up )
