@@ -543,10 +543,10 @@ public:
 		FPU_MatrixF_x_MatrixF( (float*)&m1, (float*)&m2, (float*)this);
 	}
 
-	void glhPerspectivef2(float fovyInDegrees, float aspectRatio, float znear, float zfar);
-	void glhPerspectivef2Rad(float fovyRad, float aspectRatio, float znear, float zfar);
+	void glhPerspectivef2(float fovyInDegrees, float aspectRatio, float znear, float zfar, bool homogeneousNdc, bool rightHand = false);
+	void glhPerspectivef2Rad(float fovyRad, float aspectRatio, float znear, float zfar, bool homogeneousNdc, bool rightHand = false);
 	
-	void glhFrustumf2(float left, float right, float bottom, float top,	float znear, float zfar);
+	void glhFrustumf2(float x, float y, float width, float height,	float znear, float zfar, bool homogeneousNdc, bool rightHand = false);
 	void PerspectiveFovLH2(const float fovy, const float aspect, const float zn, const float zf );
 	void OrthoOffCenterLH(const float l, float r, float b, const float t, float zn, const float zf );
 	void lookAtRH(const vec4 &eye, const vec4 &at, const vec4 &up );
