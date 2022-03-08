@@ -1276,7 +1276,7 @@ inline void RecomposeMatrixFromComponents(const float* translation, const float*
 }
 
 // Static arrays
-template <typename T, std::size_t N>
+template <typename T, size_t N>
 struct Array
 {
    T data[N];
