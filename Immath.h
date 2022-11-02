@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <float.h>
+#include <assert.h>
 
 namespace Imm
 {
@@ -65,7 +66,18 @@ template<typename T> T Lerp(T a, T b, float t)
     return a + (b - a) * t;
 }
 
+template<typename T> T Min(T a, T b)
+{
+    return (a < b) ? a : b;
+}
+
+template<typename T> T Max(T a, T b)
+{
+    return (a > b) ? a : b;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+struct vec3;
 
 struct vec4
 {
@@ -78,6 +90,7 @@ public:
 	vec4(int _x, int _y, int _z = 0, int _w = 0) : x((float)_x), y((float)_y), z((float)_z), w((float)_w)
 	{
 	}
+    vec4(const vec3& v);
 	
 	vec4 (uint32_t col) { fromUInt32(col); }
 	vec4 (float v ) : x(v), y(v), z(v), w(v) {}
@@ -213,7 +226,7 @@ public:
 
     vec4 swapedRB() const;
 	float& operator [] (size_t index) { return ((float*)&x)[index]; }
-	const float& operator [] (size_t index) const { return ((float*)&x)[index]; }
+    const float& operator [] (size_t index) const { assert(index < 4); return ((float*)&x)[index]; }
 };
 
 inline vec4 vec4::operator * ( float f ) const { return vec4(x * f, y * f, z * f, w *f); }
@@ -223,8 +236,8 @@ inline vec4 vec4::operator + ( const vec4& v ) const { return vec4(x + v.x, y + 
 inline vec4 vec4::operator * ( const vec4& v ) const { return vec4(x * v.x, y * v.y, z * v.z, w * v.w); }
 inline float vec4::signedDistanceTo(const vec4& point) const	{ return (point.dot(vec4(x,y,z))) - w; }
 
-inline vec4 normalized(const vec4& v) { vec4 res; res = v; res.normalize(); return res; }
-inline vec4 cross(const vec4& v1, const vec4& v2)
+template<typename T> vec4 Normalized(const T& v) { T res; res = v; res.normalize(); return res; }
+inline vec4 Cross(const vec4& v1, const vec4& v2)
 {
     vec4 res;
     res.x = v1.y * v2.z - v1.z * v2.y;
@@ -238,6 +251,12 @@ inline float Dot( const vec4 &v1, const vec4 &v2)
 {
 	return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
 }
+/*
+inline float Dot( const vec3 &v1, const vec3 &v2)
+{
+    return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
+}
+*/
 
 inline float Distance(const vec4& v1, const vec4& v2) { return vec4::d(v1, v2); }
 inline float DistanceXY(const vec4& v1, const vec4& v2) { return vec4::d(vec4(v1.x, v1.y), vec4(v2.x, v2.y)); }
@@ -336,12 +355,24 @@ typedef struct vec3
 {
     float x,y,z;
     void set(float v) { x = y = z = v; }
-    float length() const { return sqrtf( x * x + y * y + z * z ); }
+    float lengthSq() const { return x * x + y * y + z * z; }
+    float length() const { return sqrtf(lengthSq() + FLT_EPSILON); }
     void lerp( float v, float t)
     {
         x = Lerp( x, v, t);
         y = Lerp( y, v, t);
         z = Lerp( z, v, t);
+    }
+    vec3() {}
+    vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+    vec3(const vec3& v) : x(v.x), y(v.y), z(v.z) {}
+    vec3(const vec4& v) : x(v.x), y(v.y), z(v.z) {}
+    vec3& operator = (const vec3& v)
+    {
+        x = v.x;
+        y = v.y;
+        z = v.z;
+        return *this;
     }
     vec3& operator = (const vec4& v)
     {
@@ -350,14 +381,14 @@ typedef struct vec3
         z = v.z;
         return *this;
     }
-    vec3& operator * (const float v)
+    /*vec3& operator * (const float v)
     {
         vec3 ret;
         ret.x = x * v;
         ret.y = y * v;
         ret.z = z * v;
         return *this;
-    }
+    }*/
     vec3& operator += (const vec4& v)
     {
         x += v.x;
@@ -380,11 +411,49 @@ typedef struct vec3
         return *this;
     }
     
+    inline void cross(const vec3& v1, const vec3& v2)
+    {
+        x = v1.y * v2.z - v1.z * v2.y;
+        y = v1.z * v2.x - v1.x * v2.z;
+        z = v1.x * v2.y - v1.y * v2.x;
+    }
+    inline float dot(const vec3 &v) const
+    {
+        return (x * v.x) + (y * v.y) + (z * v.z);
+    }
+
+    inline vec3& operator *= ( const vec3& v ) { x *= v.x; y *= v.y; z *= v.z; return *this; }
+    inline vec3& operator *= ( float v ) { x *= v;    y *= v;    z *= v; return *this; }
+
     vec4 getVec4() const
     {
         return vec4( x, y, z, 0.f );
     }
+    
+    inline vec3 operator - () const;
+    inline vec3 operator - ( const vec3& v ) const;
+    inline vec3 operator + ( const vec3& v ) const;
+    
+    inline vec3 normalize() { (*this) *= (1.f/length()+FLT_EPSILON); return (*this); }
+    
+    void TransformVector(const matrix& matrix );
+    void TransformPoint(const matrix& matrix );
+    void TransformVector(const vec4& v, const matrix& matrix ) { (*this) = v; this->TransformVector(matrix); }
+    void TransformPoint(const vec4& v, const matrix& matrix ) { (*this) = v; this->TransformPoint(matrix); }
+    const float& operator [] (size_t index) const { assert(index < 3); return ((float*)&x)[index]; }
+
 } vec3;
+
+inline vec3 TransformPoint(const vec3& v, const matrix& matrix) { vec3 p(v); p.TransformPoint(matrix); return p; }
+inline vec3 TransformVector(const vec3& v, const matrix& matrix) { vec3 p(v); p.TransformVector(matrix); return p; }
+
+
+inline vec3 vec3::operator - () const { return vec3{-x, -y, -z}; }
+inline vec3 vec3::operator - ( const vec3& v ) const { return vec3{x - v.x, y - v.y, z - v.z}; }
+inline vec3 vec3::operator + ( const vec3& v ) const { return vec3{x + v.x, y + v.y, z + v.z}; }
+inline vec3 operator * (const vec3 v, float f) { return {v.x * f, v.y * f, v.z * f}; }
+
+inline vec4::vec4(const vec3& v) : x(v.x), y(v.y), z(v.z), w(0.f) {}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1108,7 +1177,7 @@ inline vec4 perpStark(vec4 u)
     unsigned int ym = (1^xm) & uzy;
     unsigned int zm = 1^(xm & ym);
 
-    vec4 v = cross( u, vec4( (float)xm, (float)ym, (float)zm ) );
+    vec4 v = Cross( u, vec4( (float)xm, (float)ym, (float)zm ) );
     return v;
 }
 
@@ -1139,8 +1208,8 @@ inline vec4 Reflect(const vec4 &incidentVec, const vec4 &normal)
 
 inline vec4 computePlansIntersections( vec4 n1, float d1, vec4 n2, float d2, vec4 n3, float d3 )
 {
-	float div = Dot(n1,cross(n2,n3));
-	vec4 u = -cross(n2,n3)*d1 - cross(n3,n1)*d2 - cross(n1,n2)*d3;
+	float div = Dot(n1,Cross(n2,n3));
+	vec4 u = -Cross(n2,n3)*d1 - Cross(n3,n1)*d2 - Cross(n1,n2)*d3;
 	vec4 r = u * (1.f/div);
 	return r;
 }
@@ -1208,7 +1277,7 @@ inline vec4 Rotate(const vec4 & v, float a)
 
 inline float GetAngle(const vec4& a, const vec4& b)
 {
-	vec4 crossed = cross(a, b);
+	vec4 crossed = Cross(a, b);
 	float dt = Dot(a, b);
 	return atan2f(crossed.length(), dt) * ((crossed.z >= 0.f) ? 1.f:-1.f);
 }
@@ -1291,5 +1360,55 @@ struct Array
 };
 
 template <typename T, typename ... U> Array(T, U...)->Array<T, 1 + sizeof...(U)>;
+
+
+template<typename T> T BezierQuadratic(const T& a, const T& b, const T& c, const T& d, T& deriv, const float t)
+{
+    T dest;
+    T ab,bc,cd,abbc,bccd;
+    ab = Lerp(a,b,t);
+    bc = Lerp(b,c,t);
+    cd = Lerp(c,d,t);
+    abbc = Lerp(ab,bc,t);
+    bccd = Lerp(bc,cd,t);
+    deriv = bccd - abbc;
+
+    dest = Lerp(abbc,bccd,t);   // point on the bezier-curve (black)
+    return dest;
+}
+
+template<typename T> void AngularLimitedVector(T& vector, T normalizedAxis, float maxDot)
+{
+    float vectorLength = vector.length();
+    T normalizedVector = vector * (1.f / vectorLength);
+
+    float dt = normalizedAxis.dot(normalizedVector);
+    if (dt >= maxDot )
+    {
+        return; // OK!
+    }
+    if ( dt < 0.f )
+    {
+        // When character moves too fast, some vector may get below axis
+        // it's some kind of length limit here:
+        vector = normalizedAxis * vector.length();
+        return;
+    }
+
+    T shortestVectToAxis = normalizedVector - normalizedAxis*dt;
+    if (shortestVectToAxis.lengthSq() <= FLT_EPSILON)
+    {
+        return; // OK!
+    }
+    shortestVectToAxis.normalize();
+
+    T newNormalizedVector = normalizedAxis * maxDot + shortestVectToAxis * sqrtf(1 - maxDot * maxDot);
+
+    vector = newNormalizedVector * vectorLength;
+
+    float sens = (vector.dot(normalizedAxis) < 0.f) ? -1.f : 1.f;
+    vector *= sens;
+}
+
 
 } // namespace Imm

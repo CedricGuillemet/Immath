@@ -20,7 +20,7 @@
 
 using namespace Imm;
 
-int g_seed = 0;
+int Imm::g_seed = 0;
 vec4 vec4::zero(0.f, 0.f, 0.f, 0.f);
 
 matrix matrix::Identity(1.f, 0.f, 0.f, 0.f,
@@ -77,6 +77,32 @@ void vec4::TransformPoint(const matrix& matrix )
 	y = out.y;
 	z = out.z;
 	w = out.w;
+}
+
+void vec3::TransformVector(const matrix& matrix )
+{
+    vec3 out;
+
+    out.x = x * matrix.m[0][0] + y * matrix.m[1][0] + z * matrix.m[2][0] ;
+    out.y = x * matrix.m[0][1] + y * matrix.m[1][1] + z * matrix.m[2][1] ;
+    out.z = x * matrix.m[0][2] + y * matrix.m[1][2] + z * matrix.m[2][2] ;
+
+    x = out.x;
+    y = out.y;
+    z = out.z;
+}
+
+void vec3::TransformPoint(const matrix& matrix )
+{
+    vec3 out;
+
+    out.x = x * matrix.m[0][0] + y * matrix.m[1][0] + z * matrix.m[2][0] + matrix.m[3][0] ;
+    out.y = x * matrix.m[0][1] + y * matrix.m[1][1] + z * matrix.m[2][1] + matrix.m[3][1] ;
+    out.z = x * matrix.m[0][2] + y * matrix.m[1][2] + z * matrix.m[2][2] + matrix.m[3][2] ;
+
+    x = out.x;
+    y = out.y;
+    z = out.z;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,7 +224,6 @@ void matrix::lookAtLH(const vec4 &eye, const vec4 &at, const vec4 &up )
 
 void matrix::LookAt(const vec4 &eye, const vec4 &at, const vec4 &up )
 {
-
 	vec4 X, Y, Z, tmp;
 
 	Z.normalize(eye - at);
