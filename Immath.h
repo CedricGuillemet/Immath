@@ -83,7 +83,8 @@ struct vec4
 {
 public:
     vec4(const vec4& other) : x(other.x), y(other.y), z(other.z), w(other.w) {}
-    vec4() {}
+    vec4() = default;
+    ~vec4() = default;
     vec4(float _x, float _y, float _z = 0.f, float _w = 0.f) : x(_x), y(_y), z(_z), w(_w)
     {
     }
@@ -92,7 +93,7 @@ public:
     }
     vec4(const vec3& v);
     
-    vec4 (uint32_t col) { fromUInt32(col); }
+    vec4 (uint32_t col) { FromUInt32(col); }
     vec4 (float v ) : x(v), y(v), z(v), w(v) {}
 
     float x,y,z,w;
@@ -220,8 +221,8 @@ public:
     void fromUInt5551(unsigned short v) { w = (float)( (v&0x8000) >> 15) ; z = (float)( (v&0x7C00) >> 10) * (1.f/31.f); 
     y = (float)( (v&0x3E0) >> 5) * (1.f/31.f); x = (float)( (v&0x1F)) * (1.f/31.f); } 
 
-    uint32_t toUInt32() const { return ((int)(w*255.f)<< 24) + ((int)(z*255.f)<< 16) + ((int)(y*255.f)<< 8) + ((int)(x*255.f)); }
-    void fromUInt32(uint32_t v) { w = (float)( (v&0xFF000000) >> 24) * (1.f/255.f); z = (float)( (v&0xFF0000) >> 16) * (1.f/255.f);
+    uint32_t ToUInt32() const { return ((int)(w*255.f)<< 24) + ((int)(z*255.f)<< 16) + ((int)(y*255.f)<< 8) + ((int)(x*255.f)); }
+    void FromUInt32(uint32_t v) { w = (float)( (v&0xFF000000) >> 24) * (1.f/255.f); z = (float)( (v&0xFF0000) >> 16) * (1.f/255.f);
     y = (float)( (v&0xFF00) >> 8) * (1.f/255.f); x = (float)( (v&0xFF)) * (1.f/255.f); } 
 
     vec4 swapedRB() const;
@@ -357,11 +358,17 @@ typedef struct vec3
     void set(float v) { x = y = z = v; }
     float lengthSq() const { return x * x + y * y + z * z; }
     float length() const { return sqrtf(lengthSq() + FLT_EPSILON); }
-    void lerp( float v, float t)
+    void lerp(float v, float t)
     {
-        x = Lerp( x, v, t);
-        y = Lerp( y, v, t);
-        z = Lerp( z, v, t);
+        x = Lerp(x, v, t);
+        y = Lerp(y, v, t);
+        z = Lerp(z, v, t);
+    }
+    void lerp(const vec3& v, float t)
+    {
+        x = Lerp(x, v.x, t);
+        y = Lerp(y, v.y, t);
+        z = Lerp(z, v.z, t);
     }
     vec3() {}
     vec3(float x, float y, float z) : x(x), y(y), z(z) {}
