@@ -1418,11 +1418,11 @@ template<typename T> void AngularLimitedVector(T& vector, T normalizedAxis, floa
     T normalizedVector = vector * (1.f / vectorLength);
 
     float dt = normalizedAxis.dot(normalizedVector);
-    if (dt >= maxDot )
+    if (dt >= maxDot)
     {
         return; // OK!
     }
-    if ( dt < 0.f )
+    if (dt < 0.f)
     {
         // When character moves too fast, some vector may get below axis
         // it's some kind of length limit here:
@@ -1430,7 +1430,7 @@ template<typename T> void AngularLimitedVector(T& vector, T normalizedAxis, floa
         return;
     }
 
-    T shortestVectToAxis = normalizedVector - normalizedAxis*dt;
+    T shortestVectToAxis = normalizedVector - normalizedAxis * dt;
     if (shortestVectToAxis.lengthSq() <= FLT_EPSILON)
     {
         return; // OK!
