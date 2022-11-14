@@ -449,6 +449,18 @@ typedef struct vec3
     void TransformPoint(const vec4& v, const matrix& matrix ) { (*this) = v; this->TransformPoint(matrix); }
     const float& operator [] (size_t index) const { assert(index < 3); return ((float*)&x)[index]; }
 
+    void isMaxOf(const vec3& v)
+    {
+        x = (v.x > x) ? v.x : x;
+        y = (v.y > y) ? v.y : y;
+        z = (v.z > z) ? v.z : z;
+    }
+    void isMinOf(const vec3& v)
+    {
+        x = (v.x > x) ? x : v.x;
+        y = (v.y > y) ? y : v.y;
+        z = (v.z > z) ? z : v.z;
+    }
 } vec3;
 
 inline vec3 TransformPoint(const vec3& v, const matrix& matrix) { vec3 p(v); p.TransformPoint(matrix); return p; }
@@ -496,9 +508,10 @@ public:
         m16[14] = v15;
         m16[15] = v16;
     }
+    ~matrix() = default;
     matrix(const matrix& other) { memcpy(&m16[0], &other.m16[0], sizeof(float) * 16); }
     matrix(const vec4 & r, const vec4 &u, const vec4& d, const vec4& p) { set(r, u, d, p); }
-    matrix() {}
+    matrix() = default;
     void set(const vec4 & r, const vec4 &u, const vec4& d, const vec4& p) { right=r; up=u; dir=d; position=p; }
     void set(float v1, float v2, float v3, float v4, float v5, float v6, float v7, float v8, float v9, float v10, float v11, float v12, float v13, float v14, float v15, float v16)
     {
@@ -1032,8 +1045,8 @@ struct Segment
 struct CapsuleHitHandler;
 struct Capsule : public Segment
 {
-    Capsule() :mask(0),mWeaponIndex(0),mHitStrength(0),mHandle(NULL) {}
-    Capsule( vec4 p0, vec4 p1, float rad, CapsuleHitHandler *handle ) : Segment(p0, p1), radius( rad ), mask(0), mHandle(handle),mWeaponIndex(0),mHitStrength(0)
+    Capsule() = default;
+    Capsule( vec4 p0, vec4 p1, float rad, CapsuleHitHandler *handle ) : Segment(p0, p1), radius( rad ), mHandle(handle)
     {
         previousP0 = p0;
         previousP1 = p1;
@@ -1041,12 +1054,12 @@ struct Capsule : public Segment
     float radius;
     vec4 previousP0;
     vec4 previousP1;
-    CapsuleHitHandler *mHandle;
-    unsigned char mWeaponIndex;
-    unsigned char mHitStrength;
+    CapsuleHitHandler* mHandle{};
+    unsigned char mWeaponIndex{0};
+    unsigned char mHitStrength{0};
     union
     {
-        uint32_t mask;
+        uint32_t mask{0};
         struct
         {
             uint32_t mBody:1;
@@ -1384,7 +1397,7 @@ template <typename T, size_t N>
 struct Array
 {
    T data[N];
-   const size_t size() const { return N; }
+   size_t size() const { return N; }
 
    const T operator [] (size_t index) const { return data[index]; }
    operator T* () {
