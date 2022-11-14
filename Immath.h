@@ -135,7 +135,7 @@ public:
     inline float lengthSq() const { return (x*x +y*y +z*z ); };
     inline vec4 normalize() { (*this) *= (1.f/length()+FLT_EPSILON); return (*this); }
     inline vec4 normalize(const vec4& v) { this->set(v.x, v.y, v.z, v.w); this->normalize(); return (*this); }
-    inline int LongestAxis() const 
+    inline int LongestAxis() const
     {
         int res = 0; 
         res = (fabsf((*this)[1]) > fabsf((*this)[res])) ? 1 : res;
@@ -447,20 +447,27 @@ typedef struct vec3
     void TransformPoint(const matrix& matrix );
     void TransformVector(const vec4& v, const matrix& matrix ) { (*this) = v; this->TransformVector(matrix); }
     void TransformPoint(const vec4& v, const matrix& matrix ) { (*this) = v; this->TransformPoint(matrix); }
-    const float& operator [] (size_t index) const { assert(index < 3); return ((float*)&x)[index]; }
-
+    float& operator [] (size_t index) const { assert(index < 3); return ((float*)&x)[index]; }
     void isMaxOf(const vec3& v)
     {
-        x = (v.x > x) ? v.x : x;
-        y = (v.y > y) ? v.y : y;
-        z = (v.z > z) ? v.z : z;
+        x = (v.x>x)?v.x:x;
+        y = (v.y>y)?v.y:y;
+        z = (v.z>z)?v.z:z;
     }
     void isMinOf(const vec3& v)
     {
-        x = (v.x > x) ? x : v.x;
-        y = (v.y > y) ? y : v.y;
-        z = (v.z > z) ? z : v.z;
+        x = (v.x>x)?x:v.x;
+        y = (v.y>y)?y:v.y;
+        z = (v.z>z)?z:v.z;
     }
+    int LongestAxis() const
+    {
+        int res = 0;
+        res = (fabsf((*this)[1]) > fabsf((*this)[res])) ? 1 : res;
+        res = (fabsf((*this)[2]) > fabsf((*this)[res])) ? 2 : res;
+        return res;
+    }
+
 } vec3;
 
 inline vec3 TransformPoint(const vec3& v, const matrix& matrix) { vec3 p(v); p.TransformPoint(matrix); return p; }
@@ -1458,5 +1465,49 @@ template<typename T> void AngularLimitedVector(T& vector, T normalizedAxis, floa
     vector *= sens;
 }
 
+inline bool IntersectRayAABB(const vec3& rO, const vec3& rV, const vec3& min, const vec3& max, float &tnear, float &tfar)
+{
+    vec3 T_1, T_2; // vectors to hold the T-values for every direction
+    float t_near = -99999.f;
+    float t_far = 99999.f;
+    const float epsilon = float(1.192092896e-07);
 
+    for (int i = 0; i < 3; i++){ //we test slabs in every direction
+        if (fabsf(rV[i]) <= epsilon)
+        { // ray parallel to planes in this direction
+            if ((rO[i] < min[i]) || (rO[i] > max[i]))
+            {
+                return false; // parallel AND outside box : no intersection possible
+            }
+        }
+        else
+        { // ray not parallel to planes in this direction
+            T_1[i] = (min[i] - rO[i]) / rV[i];
+            T_2[i] = (max[i] - rO[i]) / rV[i];
+
+            if(T_1[i] > T_2[i])
+            { // we want T_1 to hold values for intersection with near plane
+                //swap(T_1,T_2);
+                float temp = T_1[i];
+                T_1[i] = T_2[i];
+                T_2[i] = temp;
+            }
+            if (T_1[i] > t_near)
+            {
+                t_near = T_1[i];
+            }
+            if (T_2[i] < t_far)
+            {
+                t_far = T_2[i];
+            }
+            if( (t_near > t_far) || (t_far < 0.f) )
+            {
+                return false;
+            }
+        }
+    }
+    tnear = t_near;
+    tfar = t_far; // put return values in place
+    return true; // if we made it here, there was an intersection - YAY
+}
 } // namespace Imm
